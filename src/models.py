@@ -1,11 +1,11 @@
 # src/models.py
 
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from bson import ObjectId
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, computed_field
 
 # =============================================================================
 # 1. Base & Helper Models
@@ -19,15 +19,15 @@ class VehicleCondition(str, Enum):
 
 class Documentation(BaseModel):
     """Model for a vehicle's documentation due dates."""
-    inspection_due: date
-    tax_due: date
+    inspection_due: datetime
+    tax_due: datetime
 
 
 class NonRunningDetails(BaseModel):
     """Model for details required when a vehicle is not running."""
     explanation: str
     estimated_budget: float
-    eta: date
+    eta: datetime
 
 # =============================================================================
 # 2. Main Vehicle Model
@@ -46,32 +46,28 @@ class Vehicle(BaseModel):
     documentation: Documentation
     location: str
 
-    @model_validator(mode='after')
-    def check_non_running_details_logic(self) -> 'Vehicle':
-        """Ensures non_running_details is populated only when condition is NON_RUNNING."""
-        is_non_running = self.condition == VehicleCondition.NON_RUNNING
-        details_provided = self.non_running_details is not None
+    @model_validator(mode='before')
+    @classmethod
+    def check_non_running_details_logic(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            condition = data.get('condition')
+            details = data.get('non_running_details')
 
-        if is_non_running and not details_provided:
-            raise ValueError("non_running_details must be provided when condition is NON_RUNNING")
-        if not is_non_running and details_provided:
-            raise ValueError("non_running_details must not be provided when condition is RUNNING")
+            if condition == VehicleCondition.RUNNING.value and details:
+                raise ValueError("Non-running details should not be provided for a running vehicle.")
+            if condition == VehicleCondition.NON_RUNNING.value and not details:
+                raise ValueError("Non-running details are required for a non-running vehicle.")
+        return data
 
-        return self
-
+    @computed_field
     @property
     def is_available(self) -> bool:
-        """
-        A derived property to determine if a vehicle is available for use.
-        A vehicle is available if it's RUNNING and its documentation is up-to-date.
-        This field is calculated on the fly and not stored in the database.
-        """
-        today = date.today()
-        docs_ok = (
-            self.documentation.inspection_due > today and
-            self.documentation.tax_due > today
+        """A vehicle is available if its condition is 'Running' and docs are current."""
+        docs_are_valid = (
+            self.documentation.inspection_due.date() > date.today() and
+            self.documentation.tax_due.date() > date.today()
         )
-        return self.condition == VehicleCondition.RUNNING and docs_ok
+        return self.condition == VehicleCondition.RUNNING and docs_are_valid
 
     class Config:
         """Pydantic model configuration for MongoDB compatibility."""

@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 from dotenv import load_dotenv
 
 # Import database functions and models
@@ -60,9 +60,23 @@ def main():
                 if not alias or not location:
                     st.error("Alias and Location are required fields.")
                 else:
+                    # --- THIS IS THE SECTION TO CHANGE ---
+                    # Convert date objects to datetime objects
+                    inspection_datetime = datetime.combine(inspection_due, datetime.min.time())
+                    tax_datetime = datetime.combine(tax_due, datetime.min.time())
+
                     # Create the Pydantic models from form data
-                    doc_model = Documentation(inspection_due=inspection_due, tax_due=tax_due)
-                    nr_details_model = NonRunningDetails(**non_running_details_data) if non_running_details_data else None
+                    doc_model = Documentation(inspection_due=inspection_datetime, tax_due=tax_datetime)
+
+                    nr_details_model = None
+                    if non_running_details_data:
+                        eta_datetime = datetime.combine(non_running_details_data["eta"], datetime.min.time())
+                        nr_details_model = NonRunningDetails(
+                            explanation=non_running_details_data["explanation"],
+                            estimated_budget=non_running_details_data["estimated_budget"],
+                            eta=eta_datetime
+                        )
+                    # --- END OF SECTION TO CHANGE ---
 
                     new_vehicle = Vehicle(
                         alias=alias,
@@ -73,7 +87,6 @@ def main():
                         location=location
                     )
 
-                    # Add to database
                     add_vehicle(new_vehicle)
                     st.success(f"Vehicle '{alias}' added successfully!")
                     st.rerun() # Rerun the app to refresh the vehicle list

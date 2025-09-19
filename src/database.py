@@ -81,10 +81,6 @@ def get_all_vehicles() -> List[Vehicle]:
         A list of `Vehicle` model instances. Returns an empty list on error or if
         the database connection is not available.
     """
-    if not db_connection.vehicle_collection:
-        print("Cannot get vehicles: Database not connected.")
-        return []
-
     try:
         vehicles_cursor = db_connection.vehicle_collection.find()
         # Validate each document against the Pydantic model
@@ -127,10 +123,6 @@ def add_vehicle(vehicle: Vehicle) -> Optional[str]:
     Returns:
         The string representation of the new document's ID if successful, otherwise `None`.
     """
-    if not db_connection.vehicle_collection:
-        print("Cannot add vehicle: Database not connected.")
-        return None
-
     try:
         # Convert the Pydantic model to a dict.
         # `by_alias=True` ensures that our `id` field is converted to `_id` for MongoDB.
