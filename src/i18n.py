@@ -7,8 +7,8 @@ TEXT = {
     "sidebar_select_page": "Selecciona una pàgina a dalt.",
     "welcome_instructions": "Fes servir la navegació a la barra lateral per veure la flota o afegir un vehicle nou.",
 
-    "overview_page_title": "Visió General de la Flota",
-    "overview_title": "Visió General de la Flota 📋",
+    "overview_page_title": "Estat General",
+    "overview_title": "Estat General 📋",
     "overview_no_vehicles": "No s'han trobat vehicles a la base de dades. Afegeix-ne un per començar.",
     "col_alias": "Àlies",
     "col_condition": "Estat",

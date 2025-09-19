@@ -3,11 +3,12 @@ from datetime import date, datetime
 from src.database import add_vehicle
 from src.models import Vehicle, VehicleCondition, Documentation, NonRunningDetails
 from src.i18n import TEXT
+from src.uploader import upload_image
 
 st.set_page_config(page_title=TEXT["add_page_title"], layout="wide")
 st.title(TEXT["add_title"])
 
-with st.form("new_vehicle_form"):
+with st.form("new_vehicle_form", clear_on_submit=True):
     st.subheader(TEXT["add_form_subheader"])
 
     col1, col2 = st.columns(2)
@@ -15,7 +16,7 @@ with st.form("new_vehicle_form"):
     with col1:
         alias = st.text_input(TEXT["add_alias_label"])
         location = st.text_input(TEXT["add_location_label"])
-        photo_url = st.text_input(TEXT["add_photo_label"])
+        uploaded_photo = st.file_uploader("Foto del vehicle", type=["png", "jpg", "jpeg"])
 
     with col2:
         condition = st.selectbox(
@@ -26,7 +27,7 @@ with st.form("new_vehicle_form"):
         tax_due = st.date_input(TEXT["add_tax_label"], value=date.today())
 
     non_running_details_data = None
-    if condition == VehicleCondition.NON_RUNNING.value:
+    if condition == "No operatiu":
         st.warning(TEXT["add_non_running_warning"])
         explanation = st.text_area(TEXT["add_explanation_label"])
         estimated_budget = st.number_input(TEXT["add_budget_label"], min_value=0.0, step=50.0)
@@ -43,6 +44,11 @@ with st.form("new_vehicle_form"):
         if not alias or not location:
             st.error(TEXT["add_error_required"])
         else:
+            photo_url = None
+            if uploaded_photo is not None:
+                with st.spinner("Pujant imatge..."):
+                    photo_url = upload_image(uploaded_photo, alias)
+
             inspection_datetime = datetime.combine(inspection_due, datetime.min.time())
             tax_datetime = datetime.combine(tax_due, datetime.min.time())
             doc_model = Documentation(inspection_due=inspection_datetime, tax_due=tax_datetime)
@@ -58,7 +64,7 @@ with st.form("new_vehicle_form"):
 
             new_vehicle = Vehicle(
                 alias=alias,
-                photo_url=photo_url or None,
+                photo_url=photo_url,
                 condition=condition,
                 non_running_details=nr_details_model,
                 documentation=doc_model,

@@ -1,14 +1,13 @@
 import os
 import pymongo
-from dotenv import load_dotenv
+import streamlit as st
 from typing import List, Optional
 from bson import ObjectId
 from src.models import Vehicle
 
-load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI")
-DATABASE_NAME = os.getenv("DATABASE_NAME")
+MONGO_URI = st.secrets["MONGO_URI"]
+DATABASE_NAME = st.secrets["DATABASE_NAME"]
 
 class DatabaseConnection:
     def __init__(self):
@@ -27,9 +26,15 @@ class DatabaseConnection:
 db_connection = DatabaseConnection()
 
 def get_all_vehicles() -> List[Vehicle]:
+    """Fetches all vehicles from the database."""
     try:
         vehicles_cursor = db_connection.vehicle_collection.find()
-        return [Vehicle.model_validate(doc) for doc in vehicles_cursor]
+        vehicle_list = []
+        for doc in vehicles_cursor:
+            print("--- RAW DOCUMENT FROM MONGO ---")
+            print(doc)
+            vehicle_list.append(Vehicle.model_validate(doc))
+        return vehicle_list
     except Exception as e:
         print(f"An error occurred while fetching vehicles: {e}")
         return []
@@ -46,11 +51,28 @@ def add_vehicle(vehicle: Vehicle) -> str:
 def update_vehicle(vehicle_id: str, updates: dict) -> bool:
     """Updates a vehicle in the database."""
     try:
+        # Separate the main updates from the fields to unset
+        update_operation = {"$set": {}, "$unset": {}}
+
+        for key, value in updates.items():
+            if value is None:
+                # If the value is None, we want to remove the field
+                update_operation["$unset"][key] = ""
+            else:
+                # Otherwise, we set the new value
+                update_operation["$set"][key] = value
+
+        # Clean up empty operators
+        if not update_operation["$set"]:
+            del update_operation["$set"]
+        if not update_operation["$unset"]:
+            del update_operation["$unset"]
+
         result = db_connection.vehicle_collection.update_one(
             {"_id": ObjectId(vehicle_id)},
-            {"$set": updates}
+            update_operation
         )
-        return result.modified_count > 0
+        return result.modified_count > 0 or result.matched_count > 0
     except Exception as e:
         print(f"An error occurred while updating vehicle: {e}")
         return False

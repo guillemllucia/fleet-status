@@ -74,7 +74,7 @@ class Vehicle(BaseModel):
         populate_by_name = True # Replaces allow_population_by_field_name
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-
+        serialize_as_any = True
 
 # =============================================================================
 # 3. WorkOrder Model
