@@ -13,8 +13,8 @@ from pydantic import BaseModel, Field, model_validator, computed_field
 
 class VehicleCondition(str, Enum):
     """Enumeration for the operational condition of a vehicle."""
-    RUNNING = "RUNNING"
-    NON_RUNNING = "NON_RUNNING"
+    RUNNING = "Operatiu"
+    NON_RUNNING = "No operatiu"
 
 
 class Documentation(BaseModel):
