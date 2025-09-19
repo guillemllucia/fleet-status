@@ -1,0 +1,20 @@
+.PHONY: install run clean
+
+# Default command
+all: install
+
+# Install dependencies
+install:
+	@echo "Installing dependencies from requirements.txt..."
+	pip install -r requirements.txt
+
+# Run the Streamlit application
+run:
+	@echo "Starting the Streamlit application..."
+	streamlit run src/main.py
+
+# Remove Python cache files
+clean:
+	@echo "Cleaning up Python cache files..."
+	find . -type f -name "*.py[co]" -delete
+	find . -type d -name "__pycache__" -delete

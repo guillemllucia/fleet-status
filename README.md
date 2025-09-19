@@ -1,2 +1,11 @@
-# fleet-status
-Web app to display the availability of a fleet's vehicles. Visualize which cars are in the fleet, whether they are road legal (mechanical condition too) and whether they are available or not.
+# Fleet Status Dashboard
+
+A dashboard application to track the status, condition, and location of a fleet of vehicles.
+
+This project is hosted on GitHub: https://github.com/guillemllucia/fleet-status
+
+## Setup
+
+1.  Create and activate a virtual environment.
+2.  Install dependencies: `pip install -r requirements.txt`
+3.  Run the application: `streamlit run src/main.py`
