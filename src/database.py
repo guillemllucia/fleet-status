@@ -3,9 +3,9 @@ import pymongo
 import streamlit as st
 from typing import List, Optional
 from bson import ObjectId
-from src.models import Vehicle, WorkOrder
+from src.models import Vehicle, WorkOrder # <-- Ensure WorkOrder is imported here
 
-
+# Get secrets using st.secrets
 MONGO_URI = st.secrets["MONGO_URI"]
 DATABASE_NAME = st.secrets["DATABASE_NAME"]
 
@@ -25,14 +25,13 @@ class DatabaseConnection:
 
 db_connection = DatabaseConnection()
 
+# --- VEHICLE FUNCTIONS ---
 def get_all_vehicles() -> List[Vehicle]:
     """Fetches all vehicles from the database."""
     try:
         vehicles_cursor = db_connection.vehicle_collection.find()
         vehicle_list = []
         for doc in vehicles_cursor:
-            print("--- RAW DOCUMENT FROM MONGO ---")
-            print(doc)
             vehicle_list.append(Vehicle.model_validate(doc))
         return vehicle_list
     except Exception as e:
@@ -40,6 +39,7 @@ def get_all_vehicles() -> List[Vehicle]:
         return []
 
 def add_vehicle(vehicle: Vehicle) -> str:
+    """Adds a new vehicle to the database."""
     try:
         vehicle_dict = vehicle.model_dump(by_alias=True)
         result = db_connection.vehicle_collection.insert_one(vehicle_dict)
@@ -51,28 +51,25 @@ def add_vehicle(vehicle: Vehicle) -> str:
 def update_vehicle(vehicle_id: str, updates: dict) -> bool:
     """Updates a vehicle in the database."""
     try:
-        # Separate the main updates from the fields to unset
-        update_operation = {"$set": {}, "$unset": {}}
-
+        update_operation = {}
+        fields_to_set = {}
+        fields_to_unset = {}
         for key, value in updates.items():
             if value is None:
-                # If the value is None, we want to remove the field
-                update_operation["$unset"][key] = ""
+                fields_to_unset[key] = ""
             else:
-                # Otherwise, we set the new value
-                update_operation["$set"][key] = value
-
-        # Clean up empty operators
-        if not update_operation["$set"]:
-            del update_operation["$set"]
-        if not update_operation["$unset"]:
-            del update_operation["$unset"]
-
+                fields_to_set[key] = value
+        if fields_to_set:
+            update_operation["$set"] = fields_to_set
+        if fields_to_unset:
+            update_operation["$unset"] = fields_to_unset
+        if not update_operation:
+            return True
         result = db_connection.vehicle_collection.update_one(
             {"_id": ObjectId(vehicle_id)},
             update_operation
         )
-        return result.modified_count > 0 or result.matched_count > 0
+        return result.matched_count > 0
     except Exception as e:
         print(f"An error occurred while updating vehicle: {e}")
         return False
@@ -88,10 +85,10 @@ def delete_vehicle(vehicle_id: str) -> bool:
         print(f"An error occurred while deleting vehicle: {e}")
         return False
 
+# --- WORK ORDER FUNCTIONS ---
 def add_work_order(work_order: WorkOrder) -> str:
     """Adds a new work order to the database."""
     try:
-        # Get the dedicated work_orders collection
         collection = db_connection.db["work_orders"]
         work_order_dict = work_order.model_dump(by_alias=True)
         result = collection.insert_one(work_order_dict)
@@ -104,7 +101,6 @@ def get_work_orders_for_vehicle(vehicle_id: str) -> List[WorkOrder]:
     """Fetches all work orders for a specific vehicle."""
     try:
         collection = db_connection.db["work_orders"]
-        # Find all orders where vehicle_id matches
         orders_cursor = collection.find({"vehicle_id": ObjectId(vehicle_id)})
         return [WorkOrder.model_validate(doc) for doc in orders_cursor]
     except Exception as e:
