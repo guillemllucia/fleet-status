@@ -3,7 +3,7 @@ import pymongo
 import streamlit as st
 from typing import List, Optional
 from bson import ObjectId
-from src.models import Vehicle
+from src.models import Vehicle, WorkOrder
 
 
 MONGO_URI = st.secrets["MONGO_URI"]
@@ -87,3 +87,26 @@ def delete_vehicle(vehicle_id: str) -> bool:
     except Exception as e:
         print(f"An error occurred while deleting vehicle: {e}")
         return False
+
+def add_work_order(work_order: WorkOrder) -> str:
+    """Adds a new work order to the database."""
+    try:
+        # Get the dedicated work_orders collection
+        collection = db_connection.db["work_orders"]
+        work_order_dict = work_order.model_dump(by_alias=True)
+        result = collection.insert_one(work_order_dict)
+        return str(result.inserted_id)
+    except Exception as e:
+        print(f"An error occurred while adding work order: {e}")
+        return ""
+
+def get_work_orders_for_vehicle(vehicle_id: str) -> List[WorkOrder]:
+    """Fetches all work orders for a specific vehicle."""
+    try:
+        collection = db_connection.db["work_orders"]
+        # Find all orders where vehicle_id matches
+        orders_cursor = collection.find({"vehicle_id": ObjectId(vehicle_id)})
+        return [WorkOrder.model_validate(doc) for doc in orders_cursor]
+    except Exception as e:
+        print(f"An error occurred while fetching work orders: {e}")
+        return []

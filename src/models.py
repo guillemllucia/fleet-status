@@ -81,20 +81,20 @@ class Vehicle(BaseModel):
 # =============================================================================
 
 class WorkOrder(BaseModel):
-    """
-    Represents a work order for a specific vehicle.
-    This model defines the structure for a document in the 'work_orders' collection.
-    """
     id: ObjectId = Field(default_factory=ObjectId, alias="_id")
     vehicle_id: ObjectId
+    title: str
     description: str
-    cost: float
-    start_date: date
-    completion_date: Optional[date] = None
-    tasks: List[str]
+    cost: float = 0.0
+    start_date: datetime
+    completion_date: Optional[datetime] = None
+    eta: Optional[datetime] = None  # Add ETA field
+    eta_is_tbd: bool = False        # Add TBD flag
+    tasks: List[str] = []
+    is_complete: bool = False
 
     class Config:
-        """Pydantic model configuration for MongoDB compatibility."""
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+        serialize_as_any = True
