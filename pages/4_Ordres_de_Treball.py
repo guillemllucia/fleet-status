@@ -30,8 +30,12 @@ else:
             cost = st.number_input("Cost Estimat (€)", min_value=0.0, step=25.0)
 
             is_tbd = st.checkbox("ETA per determinar (TBD)")
-            # Pass the checkbox state to the 'disabled' parameter
-            eta_date = st.date_input("Data Estimada de Finalització (ETA)", value=date.today(), disabled=is_tbd)
+
+            # Only show the date picker if the 'TBD' box is NOT checked
+            if not is_tbd:
+                eta_date = st.date_input("Data Estimada de Finalització (ETA)", value=date.today())
+            else:
+                eta_date = None # Set a default value if hidden
 
             submitted = st.form_submit_button("Crea Ordre de Treball")
 
@@ -45,7 +49,7 @@ else:
                         description=description,
                         cost=cost,
                         start_date=datetime.now(),
-                        eta=None if is_tbd else datetime.combine(eta_date, datetime.min.time()),
+                        eta=None if is_tbd or eta_date is None else datetime.combine(eta_date, datetime.min.time()),
                         eta_is_tbd=is_tbd
                     )
                     add_work_order(new_order)
